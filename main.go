@@ -2,27 +2,28 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 
 	bytesUtil "github.com/mostafa-asg/pelican/bytes/util"
+	"github.com/mostafa-asg/pelican/param"
 	"github.com/mostafa-asg/pelican/parser"
 )
 
 var kvStore sync.Map
 
 func main() {
-	host := "0.0.0.0"
-	port := 8001
+	param.Load()
 
-	listener, err := net.Listen("tcp", host+":"+strconv.Itoa(port))
+	listener, err := net.Listen("tcp", param.BindAddresss())
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println(fmt.Sprintf("Pelikan is up, listening on [%s]", param.BindAddresss()))
 
 	go func() {
 		c := make(chan os.Signal)
