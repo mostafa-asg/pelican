@@ -85,7 +85,10 @@ func handleConnection(con net.Conn) {
 			}
 			value, found := kvStore.Load(key)
 			if found {
+				con.Write(bytesUtil.ToBytes(uint32(len(value.([]byte)))))
 				con.Write(value.([]byte))
+			} else {
+				con.Write(make([]byte, 4))
 			}
 		} else if string(command[0:3]) == "DEL" {
 			key, err := parser.ParseDel(command)
