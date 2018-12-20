@@ -2,9 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/binary"
-	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -12,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 
+	bytesUtil "github.com/mostafa-asg/pelican/bytes/util"
 	"github.com/mostafa-asg/pelican/parser"
 )
 
@@ -54,17 +52,18 @@ func handleConnection(con net.Conn) {
 	reader := bufio.NewReader(con)
 
 	for {
-		bytes, err := readNBytes(4, reader)
+		bytes, err := bytesUtil.ReadBytes(4, reader)
 		if err != nil {
 			log.Println("Error", err)
 			break
 		}
-		commandSize := binary.BigEndian.Uint32(bytes)
+
+		commandSize := bytesUtil.ToUint32(bytes)
 		if commandSize == 0 {
 			break
 		}
 
-		command, err := readNBytes(int(commandSize), reader)
+		command, err := bytesUtil.ReadBytes(int(commandSize), reader)
 		if err != nil {
 			log.Println("Error", err)
 			break
@@ -102,17 +101,4 @@ func handleConnection(con net.Conn) {
 	}
 
 	con.Close()
-}
-
-func readNBytes(n int, reader io.Reader) ([]byte, error) {
-	buf := make([]byte, n)
-	bytes, err := reader.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-	if bytes != n {
-		return nil, fmt.Errorf("Read %d byte(s) instead of %d byte(s)", bytes, n)
-	}
-
-	return buf, nil
 }
