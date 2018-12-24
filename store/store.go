@@ -26,10 +26,28 @@ type store struct {
 }
 
 func New(defaultExpiration time.Duration, expireStrategy Strategy, cleanupInterval time.Duration) *store {
-	return &store{
+	s := &store{
 		defaultExpiration: defaultExpiration,
 		cleanupInterval:   cleanupInterval,
 		expireStrategy:    expireStrategy,
+	}
+
+	go s.startEviction()
+	return s
+}
+
+func (s *store) startEviction() {
+	ticker := time.NewTicker(s.cleanupInterval)
+
+	for t := range ticker.C {
+		now := t.Nanosecond()
+		s.items.Range(func(key, val interface{}) bool {
+			value := val.(*item)
+			if now > value.expireAt.Nanosecond() {
+				s.items.Delete(key)
+			}
+			return true
+		})
 	}
 }
 
