@@ -7,17 +7,32 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"sync"
 
 	bytesUtil "github.com/mostafa-asg/pelican/bytes/util"
 	"github.com/mostafa-asg/pelican/param"
 	"github.com/mostafa-asg/pelican/parser"
+	"github.com/mostafa-asg/pelican/store"
 )
-
-var kvStore sync.Map
 
 func main() {
 	param.Load()
+
+	defaultExpire, err := param.DefaultExpire()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	expireStrategy, err := param.DefaultStrategy()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cleanUpInterval, err := param.CleanUpInterval()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	kvStore := store.New(defaultExpire, expireStrategy, cleanUpInterval)
 
 	listener, err := net.Listen("tcp", param.BindAddresss())
 	if err != nil {
@@ -44,12 +59,12 @@ func main() {
 			log.Println("Error in accepting connecton", err)
 		} else {
 			log.Println("Accept new connection from", con.RemoteAddr())
-			go handleConnection(con)
+			go handleConnection(con, kvStore)
 		}
 	}
 }
 
-func handleConnection(con net.Conn) {
+func handleConnection(con net.Conn, kvStore *store.Store) {
 	reader := bufio.NewReader(con)
 
 	for {
@@ -76,7 +91,7 @@ func handleConnection(con net.Conn) {
 				log.Println("Error", err)
 				break
 			}
-			kvStore.Store(key, value)
+			kvStore.Put(key, value)
 
 		} else if string(command[0:3]) == "GET" {
 			key, err := parser.ParseGet(command)
@@ -84,7 +99,7 @@ func handleConnection(con net.Conn) {
 				log.Println("Error", err)
 				break
 			}
-			value, found := kvStore.Load(key)
+			value, found := kvStore.Get(key)
 			if found {
 				con.Write(bytesUtil.ToBytes(uint32(len(value.([]byte)))))
 				con.Write(value.([]byte))
@@ -97,7 +112,7 @@ func handleConnection(con net.Conn) {
 				log.Println("Error", err)
 				break
 			}
-			kvStore.Delete(key)
+			kvStore.Del(key)
 		} else {
 			log.Println("Unknown command")
 			break

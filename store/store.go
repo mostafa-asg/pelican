@@ -19,7 +19,7 @@ type item struct {
 	expirationStrategy Strategy
 }
 
-type store struct {
+type Store struct {
 	items                 sync.Map
 	defaultExpiration     time.Duration
 	cleanupInterval       time.Duration
@@ -28,8 +28,8 @@ type store struct {
 
 func New(defaultExpiration time.Duration,
 	defaultExpireStrategy Strategy,
-	cleanupInterval time.Duration) *store {
-	s := &store{
+	cleanupInterval time.Duration) *Store {
+	s := &Store{
 		defaultExpiration:     defaultExpiration,
 		cleanupInterval:       cleanupInterval,
 		defaultExpireStrategy: defaultExpireStrategy,
@@ -39,7 +39,7 @@ func New(defaultExpiration time.Duration,
 	return s
 }
 
-func (s *store) startEviction() {
+func (s *Store) startEviction() {
 	ticker := time.NewTicker(s.cleanupInterval)
 
 	for t := range ticker.C {
@@ -54,11 +54,11 @@ func (s *store) startEviction() {
 	}
 }
 
-func (s *store) Put(key string, value interface{}) {
+func (s *Store) Put(key string, value interface{}) {
 	s.PutWithExpire(key, value, s.defaultExpiration, s.defaultExpireStrategy)
 }
 
-func (s *store) PutWithExpire(key string, value interface{}, expiration time.Duration, strategy Strategy) {
+func (s *Store) PutWithExpire(key string, value interface{}, expiration time.Duration, strategy Strategy) {
 	v := &item{
 		data:               value,
 		expireAt:           time.Now().Add(expiration),
@@ -69,7 +69,7 @@ func (s *store) PutWithExpire(key string, value interface{}, expiration time.Dur
 	s.items.Store(key, v)
 }
 
-func (s *store) Get(key string) (interface{}, bool) {
+func (s *Store) Get(key string) (interface{}, bool) {
 	value, found := s.items.Load(key)
 	if !found {
 		return nil, false
@@ -89,6 +89,6 @@ func (s *store) Get(key string) (interface{}, bool) {
 	}
 }
 
-func (s *store) Del(key string) {
+func (s *Store) Del(key string) {
 	s.items.Delete(key)
 }
