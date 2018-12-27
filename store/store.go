@@ -13,23 +13,26 @@ const (
 )
 
 type item struct {
-	data       interface{}
-	expireAt   time.Time
-	expiration time.Duration
+	data               interface{}
+	expireAt           time.Time
+	expiration         time.Duration
+	expirationStrategy Strategy
 }
 
 type store struct {
-	items             sync.Map
-	defaultExpiration time.Duration
-	cleanupInterval   time.Duration
-	expireStrategy    Strategy
+	items                 sync.Map
+	defaultExpiration     time.Duration
+	cleanupInterval       time.Duration
+	defaultExpireStrategy Strategy
 }
 
-func New(defaultExpiration time.Duration, expireStrategy Strategy, cleanupInterval time.Duration) *store {
+func New(defaultExpiration time.Duration,
+	defaultExpireStrategy Strategy,
+	cleanupInterval time.Duration) *store {
 	s := &store{
-		defaultExpiration: defaultExpiration,
-		cleanupInterval:   cleanupInterval,
-		expireStrategy:    expireStrategy,
+		defaultExpiration:     defaultExpiration,
+		cleanupInterval:       cleanupInterval,
+		defaultExpireStrategy: defaultExpireStrategy,
 	}
 
 	go s.startEviction()
@@ -40,10 +43,10 @@ func (s *store) startEviction() {
 	ticker := time.NewTicker(s.cleanupInterval)
 
 	for t := range ticker.C {
-		now := t.Nanosecond()
+		now := t.UnixNano()
 		s.items.Range(func(key, val interface{}) bool {
 			value := val.(*item)
-			if now > value.expireAt.Nanosecond() {
+			if now > value.expireAt.UnixNano() {
 				s.items.Delete(key)
 			}
 			return true
@@ -52,14 +55,15 @@ func (s *store) startEviction() {
 }
 
 func (s *store) Put(key string, value interface{}) {
-	s.PutWithExpire(key, value, s.defaultExpiration)
+	s.PutWithExpire(key, value, s.defaultExpiration, s.defaultExpireStrategy)
 }
 
-func (s *store) PutWithExpire(key string, value interface{}, expiration time.Duration) {
+func (s *store) PutWithExpire(key string, value interface{}, expiration time.Duration, strategy Strategy) {
 	v := &item{
-		data:       value,
-		expireAt:   time.Now().Add(expiration),
-		expiration: expiration,
+		data:               value,
+		expireAt:           time.Now().Add(expiration),
+		expiration:         expiration,
+		expirationStrategy: strategy,
 	}
 
 	s.items.Store(key, v)
@@ -77,7 +81,7 @@ func (s *store) Get(key string) (interface{}, bool) {
 			return nil, false
 		}
 
-		if s.expireStrategy == Sliding {
+		if value.expirationStrategy == Sliding {
 			value.expireAt = value.expireAt.Add(value.expiration)
 		}
 
