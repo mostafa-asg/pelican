@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/signal"
 
-	bytesUtil "github.com/mostafa-asg/pelican/bytes/util"
 	"github.com/mostafa-asg/pelican/param"
 	"github.com/mostafa-asg/pelican/parser"
 	"github.com/mostafa-asg/pelican/store"
+	bytesUtil "github.com/mostafa-asg/pelican/util/bytes"
 )
 
 func main() {
