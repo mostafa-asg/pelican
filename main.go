@@ -11,6 +11,7 @@ import (
 	"github.com/mostafa-asg/pelican/param"
 	"github.com/mostafa-asg/pelican/parser"
 	"github.com/mostafa-asg/pelican/store"
+	"github.com/mostafa-asg/pelican/util"
 	bytesUtil "github.com/mostafa-asg/pelican/util/bytes"
 )
 
@@ -18,26 +19,18 @@ func main() {
 	param.Load()
 
 	defaultExpire, err := param.DefaultExpire()
-	if err != nil {
-		log.Fatal(err)
-	}
+	util.HandleError(err, util.Fatal)
 
 	expireStrategy, err := param.DefaultStrategy()
-	if err != nil {
-		log.Fatal(err)
-	}
+	util.HandleError(err, util.Fatal)
 
 	cleanUpInterval, err := param.CleanUpInterval()
-	if err != nil {
-		log.Fatal(err)
-	}
+	util.HandleError(err, util.Fatal)
 
 	kvStore := store.New(defaultExpire, expireStrategy, cleanUpInterval)
 
 	listener, err := net.Listen("tcp", param.BindAddresss())
-	if err != nil {
-		log.Fatal(err)
-	}
+	util.HandleError(err, util.Fatal)
 	log.Println(fmt.Sprintf("Pelikan is up, listening on [%s]", param.BindAddresss()))
 
 	go func() {
