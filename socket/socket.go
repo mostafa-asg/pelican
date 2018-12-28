@@ -2,12 +2,29 @@ package socket
 
 import (
 	"bufio"
-	"net"
 	"log"
-	"github.com/mostafa-asg/pelican/store"
+	"net"
+
+	"github.com/mostafa-asg/pelican/socket/executor"
 	"github.com/mostafa-asg/pelican/socket/parser"
+	"github.com/mostafa-asg/pelican/store"
 	bytesUtil "github.com/mostafa-asg/pelican/util/bytes"
 )
+
+var parsers []parser.Parser
+var executors []executor.Executor
+
+func init() {
+	parsers = make([]parser.Parser, 0)
+	parsers = append(parsers, parser.NewPutParser())
+	parsers = append(parsers, parser.NewGetParser())
+	parsers = append(parsers, parser.NewDelParser())
+
+	executors = make([]executor.Executor, 0)
+	executors = append(executors, executor.NewPutExecutor())
+	executors = append(executors, executor.NewGetExecutor())
+	executors = append(executors, executor.NewDelExecutor())
+}
 
 func HandleConnection(con net.Conn, kvStore *store.Store) {
 	reader := bufio.NewReader(con)
@@ -30,36 +47,30 @@ func HandleConnection(con net.Conn, kvStore *store.Store) {
 			break
 		}
 
-		if string(command[0:3]) == "PUT" {
-			key, value, err := parser.ParsePut(command)
-			if err != nil {
-				log.Println("Error", err)
-				break
-			}
-			kvStore.Put(key, value)
+		commandFound := false
+		for _, p := range parsers {
+			if p.Accept(command) {
+				commandFound = true
 
-		} else if string(command[0:3]) == "GET" {
-			key, err := parser.ParseGet(command)
-			if err != nil {
-				log.Println("Error", err)
+				pr, err := p.Parse(command)
+				if err != nil {
+					log.Println("Error", err)
+					break
+				}
+
+				for _, e := range executors {
+					if e.Accept(pr) {
+						e.Execute(pr, kvStore, con)
+						break
+					}
+				}
+
 				break
 			}
-			value, found := kvStore.Get(key)
-			if found {
-				con.Write(bytesUtil.ToBytes(uint32(len(value.([]byte)))))
-				con.Write(value.([]byte))
-			} else {
-				con.Write(make([]byte, 4))
-			}
-		} else if string(command[0:3]) == "DEL" {
-			key, err := parser.ParseDel(command)
-			if err != nil {
-				log.Println("Error", err)
-				break
-			}
-			kvStore.Del(key)
-		} else {
-			log.Println("Unknown command")
+		}
+
+		if !commandFound {
+			log.Println("Error: Command not found.")
 			break
 		}
 	}

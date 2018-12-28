@@ -8,32 +8,63 @@ import (
 	"strings"
 )
 
-// ParsePut parses
-func ParsePut(data []byte) (string, []byte, error) {
-	reader := bufio.NewReader(bytes.NewReader(data))
+type PutResult struct {
+	command string
+	Key     string
+	Value   []byte
+}
+
+func (r *PutResult) Command() string {
+	return r.command
+}
+
+type PutParser struct{}
+
+func (p *PutParser) Accept(command []byte) bool {
+	if len(command) > 4 &&
+		command[0] == 'P' &&
+		command[1] == 'U' &&
+		command[2] == 'T' &&
+		command[3] == ' ' {
+		return true
+	}
+
+	return false
+}
+
+func (p *PutParser) Parse(command []byte) (ParseResult, error) {
+	reader := bufio.NewReader(bytes.NewReader(command))
 
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		return "", nil, err
+		return &PutResult{}, err
 	}
 
 	tokens := strings.Split(line, " ")
 	if tokens[0] != "PUT" {
-		return "", nil, errors.New("Parse error: expected PUT but found " + tokens[0])
+		return &PutResult{}, errors.New("Parse error: expected PUT but found " + tokens[0])
 	}
 
 	key := tokens[1]
 
 	valueSize, err := strconv.Atoi(strings.Trim(tokens[2], "\n"))
 	if err != nil {
-		return "", nil, err
+		return &PutResult{}, err
 	}
 
 	value := make([]byte, valueSize)
-	n, err := reader.Read(value)
+	_, err = reader.Read(value)
 	if err != nil {
-		return "", nil, err
+		return &PutResult{}, err
 	}
 
-	return key, value[:n], nil
+	return &PutResult{
+		command: "PUT",
+		Key:     key,
+		Value:   value,
+	}, nil
+}
+
+func NewPutParser() *PutParser {
+	return &PutParser{}
 }
