@@ -19,11 +19,13 @@ func init() {
 	parsers = append(parsers, parser.NewPutParser())
 	parsers = append(parsers, parser.NewGetParser())
 	parsers = append(parsers, parser.NewDelParser())
+	parsers = append(parsers, parser.NewPutEParser())
 
 	executors = make([]executor.Executor, 0)
 	executors = append(executors, executor.NewPutExecutor())
 	executors = append(executors, executor.NewGetExecutor())
 	executors = append(executors, executor.NewDelExecutor())
+	executors = append(executors, executor.NewPutEExecutor())
 }
 
 func HandleConnection(con net.Conn, kvStore *store.Store) {
