@@ -10,7 +10,7 @@ import (
 func ToTimeDuration(s string) (time.Duration, error) {
 	length := len(s)
 	if length < 2 {
-		errors.New("At least two characters is needed")
+		return 0, errors.New("At least two characters is needed")
 	}
 
 	number, err := strconv.Atoi(s[:len(s)-1])
