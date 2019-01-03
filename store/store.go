@@ -89,6 +89,96 @@ func (s *Store) Get(key string) (interface{}, bool) {
 	}
 }
 
+func (s *Store) GetInt(key string) (int, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(int), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetInt16(key string) (int16, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(int16), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetUint16(key string) (uint16, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(uint16), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetInt32(key string) (int32, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(int32), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetUint32(key string) (uint32, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(uint32), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetInt64(key string) (int64, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(int64), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetUint64(key string) (uint64, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(uint64), found
+	}
+
+	return 0, false
+}
+
+func (s *Store) GetBool(key string) (bool, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(bool), found
+	}
+
+	return false, false
+}
+
+func (s *Store) GetString(key string) (string, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.(string), found
+	}
+
+	return "", false
+}
+
+func (s *Store) GetByteArray(key string) ([]byte, bool) {
+	value, found := s.Get(key)
+	if found {
+		return value.([]byte), found
+	}
+
+	return make([]byte, 0), false
+}
+
 func (s *Store) Del(key string) {
 	s.items.Delete(key)
 }
