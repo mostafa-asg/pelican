@@ -71,3 +71,42 @@ There is two ways to connect to Pelican as a standalone service:
 
 The simplest way to connect to Pelican is through available clinets:
 * Java applications: [jPelican](https://github.com/mostafa-asg/jPelican)
+
+### Running Pelican server
+```
+go get -u https://github.com/mostafa-asg/pelican
+cd $GOPATH/github.com/mostafa-asg/pelican
+go build
+./pelican
+```
+You can pass the parameters when you run:
+`
+./pelican -expire=10m -strategy=sliding -cleanup=30m
+`
+To see the full flags, use -h:
+```
+./pelican -h
+```
+### Enable http endpoints
+./pelican -enable-http=true
+#### Set the key
+```
+curl -X PUT http://localhost:4050/firstname --data mostafa
+```
+#### Get the key
+Request:
+```
+curl http://localhost:4050/firstname
+```
+Response:
+```
+{ "value": "bW9zdGFmYQ==" }
+```
+As you see the value is binary that encoded as base64. If you know the type, you can pass it through headers:
+```
+curl -H "type:string" http://localhost:4050/firstname
+```
+Response:
+```
+{ "value": "mostaaf" }
+```
