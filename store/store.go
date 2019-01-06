@@ -92,11 +92,16 @@ func (s *Store) PutWithExpire(key string, value interface{}, expiration time.Dur
 	}
 
 	s.items.Store(key, v)
-	s.metrics.putCount.Inc()
+	go func() {
+		s.metrics.putCount.Inc()
+	}()
 }
 
 func (s *Store) Get(key string) (interface{}, bool) {
-	s.metrics.getCount.Inc()
+	go func() {
+		s.metrics.getCount.Inc()
+	}()
+
 	value, found := s.items.Load(key)
 	if !found {
 		return nil, false
@@ -207,6 +212,9 @@ func (s *Store) GetByteArray(key string) ([]byte, bool) {
 }
 
 func (s *Store) Del(key string) {
-	s.items.Delete(key)
+	go func() {
+		s.items.Delete(key)
+	}()
+
 	s.metrics.delCount.Inc()
 }
