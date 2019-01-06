@@ -14,6 +14,7 @@ import (
 	"github.com/mostafa-asg/pelican/socket"
 	"github.com/mostafa-asg/pelican/store"
 	"github.com/mostafa-asg/pelican/util"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -40,6 +41,7 @@ func main() {
 			r.HandleFunc("/{key}", api.PutHandler(kvStore)).Methods("post")
 			r.HandleFunc("/{key}", api.GetHandler(kvStore)).Methods("get")
 			r.HandleFunc("/{key}", api.DelHandler(kvStore)).Methods("delete")
+			r.Handle("/get/metrics", prometheus.Handler())
 			log.Println(fmt.Sprintf("Http server will listen on [%s]", param.HttpBindAddress()))
 			http.ListenAndServe(param.HttpBindAddress(), r)
 		}

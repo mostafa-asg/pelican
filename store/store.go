@@ -3,6 +3,8 @@ package store
 import (
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Strategy int
@@ -19,11 +21,18 @@ type item struct {
 	expirationStrategy Strategy
 }
 
+type metrics struct {
+	putCount prometheus.Counter
+	getCount prometheus.Counter
+	delCount prometheus.Counter
+}
+
 type Store struct {
 	items                 sync.Map
 	defaultExpiration     time.Duration
 	cleanupInterval       time.Duration
 	defaultExpireStrategy Strategy
+	metrics               *metrics
 }
 
 func New(defaultExpiration time.Duration,
@@ -33,7 +42,23 @@ func New(defaultExpiration time.Duration,
 		defaultExpiration:     defaultExpiration,
 		cleanupInterval:       cleanupInterval,
 		defaultExpireStrategy: defaultExpireStrategy,
+		metrics: &metrics{
+			putCount: prometheus.NewCounter(prometheus.CounterOpts{
+				Name: "total_put",
+				Help: "Total number of put requests",
+			}),
+			getCount: prometheus.NewCounter(prometheus.CounterOpts{
+				Name: "total_get",
+				Help: "Total number of get requests",
+			}),
+			delCount: prometheus.NewCounter(prometheus.CounterOpts{
+				Name: "total_del",
+				Help: "Total number of del requests",
+			}),
+		},
 	}
+
+	prometheus.MustRegister(s.metrics.putCount, s.metrics.getCount, s.metrics.delCount)
 
 	go s.startEviction()
 	return s
@@ -67,9 +92,11 @@ func (s *Store) PutWithExpire(key string, value interface{}, expiration time.Dur
 	}
 
 	s.items.Store(key, v)
+	s.metrics.putCount.Inc()
 }
 
 func (s *Store) Get(key string) (interface{}, bool) {
+	s.metrics.getCount.Inc()
 	value, found := s.items.Load(key)
 	if !found {
 		return nil, false
@@ -181,4 +208,5 @@ func (s *Store) GetByteArray(key string) ([]byte, bool) {
 
 func (s *Store) Del(key string) {
 	s.items.Delete(key)
+	s.metrics.delCount.Inc()
 }
