@@ -38,7 +38,7 @@ func main() {
 	go func() {
 		if param.HttpEnabled() {
 			r := mux.NewRouter()
-			r.HandleFunc("/{key}", api.PutHandler(kvStore)).Methods("post")
+			r.HandleFunc("/{key}", api.PutHandler(kvStore)).Methods("put")
 			r.HandleFunc("/{key}", api.GetHandler(kvStore)).Methods("get")
 			r.HandleFunc("/{key}", api.DelHandler(kvStore)).Methods("delete")
 			r.Handle("/get/metrics", prometheus.Handler())
