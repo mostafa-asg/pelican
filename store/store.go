@@ -10,13 +10,14 @@ import (
 type Strategy int
 
 const (
-	Absolute Strategy = 0
-	Sliding  Strategy = 1
+	Absolute     Strategy      = 0
+	Sliding      Strategy      = 1
+	NoExpiration time.Duration = 0
 )
 
 type item struct {
 	data               interface{}
-	expireAt           time.Time
+	expireAt           int64
 	expiration         time.Duration
 	expirationStrategy Strategy
 }
@@ -71,7 +72,7 @@ func (s *Store) startEviction() {
 		now := t.UnixNano()
 		s.items.Range(func(key, val interface{}) bool {
 			value := val.(*item)
-			if now > value.expireAt.UnixNano() {
+			if value.expireAt > 0 && now > value.expireAt {
 				s.items.Delete(key)
 			}
 			return true
@@ -83,10 +84,19 @@ func (s *Store) Put(key string, value interface{}) {
 	s.PutWithExpire(key, value, s.defaultExpiration, s.defaultExpireStrategy)
 }
 
+func (s *Store) PutWithoutExpire(key string, value interface{}) {
+	s.PutWithExpire(key, value, NoExpiration, s.defaultExpireStrategy)
+}
+
 func (s *Store) PutWithExpire(key string, value interface{}, expiration time.Duration, strategy Strategy) {
+	var expireAt int64
+	if expiration.Nanoseconds() > 0 {
+		expireAt = time.Now().Add(expiration).UnixNano()
+	}
+
 	v := &item{
 		data:               value,
-		expireAt:           time.Now().Add(expiration),
+		expireAt:           expireAt,
 		expiration:         expiration,
 		expirationStrategy: strategy,
 	}
@@ -107,14 +117,18 @@ func (s *Store) Get(key string) (interface{}, bool) {
 		return nil, false
 	} else {
 		value := value.(*item)
+		if value.expireAt == 0 { // No expiration
+			return value.data, true
+		}
+
 		now := time.Now().UnixNano()
 
-		if now > value.expireAt.UnixNano() {
+		if now > value.expireAt {
 			return nil, false
 		}
 
 		if value.expirationStrategy == Sliding {
-			value.expireAt = value.expireAt.Add(value.expiration)
+			value.expireAt += value.expiration.Nanoseconds()
 		}
 
 		return value.data, true
@@ -213,8 +227,8 @@ func (s *Store) GetByteArray(key string) ([]byte, bool) {
 
 func (s *Store) Del(key string) {
 	go func() {
-		s.items.Delete(key)
+		s.metrics.delCount.Inc()
 	}()
 
-	s.metrics.delCount.Inc()
+	s.items.Delete(key)
 }

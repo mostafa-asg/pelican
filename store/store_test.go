@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-func TestStore(t *testing.T) {
+func TestPutAndGet(t *testing.T) {
 	kv := New(1*time.Second, Absolute, 30*time.Second)
 	kv.Put("SomeKey", 765)
-	val, found := kv.Get("SomeKey")
+	val, found := kv.GetInt("SomeKey")
 	if !found {
 		t.Error("Key must be exist")
 	}
-	if val.(int) != 765 {
+	if val != 765 {
 		t.Error("Invalid value")
 	}
 
@@ -21,10 +21,13 @@ func TestStore(t *testing.T) {
 	if found {
 		t.Errorf("Key '%s' has not been expired", "Key2")
 	}
+}
 
-	kv.PutWithExpire("Key2", "Hello", 1*time.Hour)
+func TestDel(t *testing.T) {
+	kv := New(1*time.Second, Absolute, 30*time.Second)
+	kv.PutWithoutExpire("Key2", "Hello")
 	kv.Del("Key2")
-	_, found = kv.Get("Key2")
+	_, found := kv.Get("Key2")
 	if found {
 		t.Errorf("Key '%s' has not been expired", "Key2")
 	}
