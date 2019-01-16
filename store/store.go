@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -30,16 +31,19 @@ type metrics struct {
 
 type Store struct {
 	items                 sync.Map
+	counters              map[string]int64
 	defaultExpiration     time.Duration
 	cleanupInterval       time.Duration
 	defaultExpireStrategy Strategy
 	metrics               *metrics
+	mutex                 *sync.Mutex
 }
 
 func New(defaultExpiration time.Duration,
 	defaultExpireStrategy Strategy,
 	cleanupInterval time.Duration) *Store {
 	s := &Store{
+		counters:              make(map[string]int64),
 		defaultExpiration:     defaultExpiration,
 		cleanupInterval:       cleanupInterval,
 		defaultExpireStrategy: defaultExpireStrategy,
@@ -57,6 +61,7 @@ func New(defaultExpiration time.Duration,
 				Help: "Total number of del requests",
 			}),
 		},
+		mutex: &sync.Mutex{},
 	}
 
 	prometheus.MustRegister(s.metrics.putCount, s.metrics.getCount, s.metrics.delCount)
@@ -231,4 +236,43 @@ func (s *Store) Del(key string) {
 	}()
 
 	s.items.Delete(key)
+}
+
+func (s *Store) IncCounter(key string, valueToAdd int64) int64 {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	counter, found := s.counters[key]
+	if !found {
+		s.counters[key] = valueToAdd
+		return valueToAdd
+	}
+	counter += valueToAdd
+	s.counters[key] = counter
+	return counter
+}
+
+func (s *Store) DecCounter(key string, valueToDec int64) int64 {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	counter, found := s.counters[key]
+	if !found {
+		s.counters[key] = valueToDec
+		return valueToDec
+	}
+	counter -= valueToDec
+	s.counters[key] = counter
+	return counter
+}
+
+func (s *Store) GetCounter(key string) (int64, error) {
+	s.mutex.Lock()
+	counter, found := s.counters[key]
+	s.mutex.Unlock()
+
+	if !found {
+		return 0, errors.New("Counter not found")
+	}
+	return counter, nil
 }

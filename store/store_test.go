@@ -32,3 +32,16 @@ func TestDel(t *testing.T) {
 		t.Errorf("Key '%s' has not been expired", "Key2")
 	}
 }
+
+func TestCounter(t *testing.T) {
+	kv := New(1*time.Second, Absolute, 30*time.Second)
+	kv.IncCounter("online_users", 1)
+	kv.IncCounter("online_users", 1)
+	kv.IncCounter("online_users", 1)
+	kv.IncCounter("online_users", 1)
+	kv.DecCounter("online_users", 1)
+	onlineUsers, _ := kv.GetCounter("online_users")
+	if onlineUsers != 3 {
+		t.Error("Invalid countet value")
+	}
+}
