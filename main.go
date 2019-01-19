@@ -41,6 +41,8 @@ func main() {
 			r.HandleFunc("/{key}", api.PutHandler(kvStore)).Methods("put")
 			r.HandleFunc("/{key}", api.GetHandler(kvStore)).Methods("get")
 			r.HandleFunc("/{key}", api.DelHandler(kvStore)).Methods("delete")
+			r.HandleFunc("/counter/inc/{key}/{value}", api.IncCounter(kvStore)).Methods("put")
+			r.HandleFunc("/counter/dec/{key}/{value}", api.DecCounter(kvStore)).Methods("put")
 			r.Handle("/get/metrics", prometheus.Handler())
 			log.Println(fmt.Sprintf("Http server will listen on [%s]", param.HttpBindAddress()))
 			http.ListenAndServe(param.HttpBindAddress(), r)

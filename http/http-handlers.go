@@ -104,6 +104,46 @@ func PutHandler(kvStore *store.Store) func(http.ResponseWriter, *http.Request) {
 
 }
 
+func IncCounter(kvStore *store.Store) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		key := vars["key"]
+		value, err := strconv.Atoi(vars["value"])
+		if err != nil {
+			w.Write([]byte("{ \"error\" : \""))
+			w.Write([]byte(err.Error()))
+			w.Write([]byte("\" }"))
+		} else {
+			counter := kvStore.IncCounter(key, int64(value))
+			w.Write([]byte("{ \"value\": \""))
+			w.Write([]byte(strconv.FormatInt(counter, 10)))
+			w.Write([]byte("\" }"))
+		}
+	}
+
+}
+
+func DecCounter(kvStore *store.Store) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		key := vars["key"]
+		value, err := strconv.Atoi(vars["value"])
+		if err != nil {
+			w.Write([]byte("{ \"error\" : \""))
+			w.Write([]byte(err.Error()))
+			w.Write([]byte("\" }"))
+		} else {
+			counter := kvStore.DecCounter(key, int64(value))
+			w.Write([]byte("{ \"value\": \""))
+			w.Write([]byte(strconv.FormatInt(counter, 10)))
+			w.Write([]byte("\" }"))
+		}
+	}
+
+}
+
 func DelHandler(kvStore *store.Store) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
