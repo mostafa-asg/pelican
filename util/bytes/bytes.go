@@ -51,6 +51,12 @@ func ToBytes(number uint32) []byte {
 	return buf
 }
 
+func ToBytes64(number uint64) []byte {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, number)
+	return buf
+}
+
 func ReadBytes(numberOfBytes int, reader io.Reader) ([]byte, error) {
 	buf := make([]byte, numberOfBytes)
 	bytes, err := reader.Read(buf)
